@@ -39,7 +39,7 @@ namespace Serilog.Sinks.LineNotify
 
         public LineNotifySink(ITextFormatter textFormatter, string lineNotifyToken, string lineNotifyApiUrl = "https://notify-api.line.me/api/notify")
         {
-            if (!string.IsNullOrWhiteSpace(lineNotifyToken))
+            if (string.IsNullOrWhiteSpace(lineNotifyToken))
             {
                 throw new ArgumentException("line notify token 不能為空。", nameof(lineNotifyToken));
             }
