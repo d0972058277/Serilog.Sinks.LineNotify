@@ -1,8 +1,4 @@
-﻿using Serilog.Debugging;
-using Serilog.Events;
-using Serilog.Formatting;
-using Serilog.Sinks.PeriodicBatching;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,10 +7,14 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using Serilog.Debugging;
+using Serilog.Events;
+using Serilog.Formatting;
+using Serilog.Sinks.PeriodicBatching;
 
 namespace Serilog.Sinks.LineNotify
 {
-    class LineNotifySink : IBatchedLogEventSink
+    class LineNotifySink : IBatchedLogEventSink, IDisposable
     {
         private const int DefaultWriteBufferCapacity = 256;
 
@@ -35,6 +35,24 @@ namespace Serilog.Sinks.LineNotify
             _lineNotifyApiUrl = lineNotifyApiUrl;
             _textFormatter = textFormatter;
             _lineNotifyTokens = lineNotifyTokens;
+        }
+
+        public LineNotifySink(ITextFormatter textFormatter, string lineNotifyToken, string lineNotifyApiUrl = "https://notify-api.line.me/api/notify")
+        {
+            if (!string.IsNullOrWhiteSpace(lineNotifyToken))
+            {
+                throw new ArgumentException("line notify token 不能為空。", nameof(lineNotifyToken));
+            }
+
+            _httpClient = new HttpClient();
+            _lineNotifyApiUrl = lineNotifyApiUrl;
+            _textFormatter = textFormatter;
+            _lineNotifyTokens = new [] { lineNotifyToken };
+        }
+
+        public void Dispose()
+        {
+            _httpClient?.Dispose();
         }
 
         public async Task EmitBatchAsync(IEnumerable<LogEvent> batch)
@@ -68,20 +86,18 @@ namespace Serilog.Sinks.LineNotify
 
         private async Task NotifyAsync(string token, string message)
         {
-            using (var requestMessage = new HttpRequestMessage(HttpMethod.Post, _lineNotifyApiUrl))
+            using(var requestMessage = new HttpRequestMessage(HttpMethod.Post, _lineNotifyApiUrl))
             {
                 requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                requestMessage.Content = new FormUrlEncodedContent(new[]
+                requestMessage.Content = new FormUrlEncodedContent(new []
                 {
-                    new KeyValuePair<string, string>("message",  message)
+                    new KeyValuePair<string, string>("message", message)
                 });
 
                 var response = await _httpClient.SendAsync(requestMessage);
 
-                if (response.StatusCode == HttpStatusCode.OK)
-                {
-                }
+                if (response.StatusCode == HttpStatusCode.OK) { }
                 else if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     throw new LoggingFailedException($"此Token已失效 : {token}");
