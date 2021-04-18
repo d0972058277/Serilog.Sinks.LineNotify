@@ -16,38 +16,18 @@ namespace Serilog.Sinks.LineNotify
 {
     class LineNotifySink : IBatchedLogEventSink, IDisposable
     {
-        private const int DefaultWriteBufferCapacity = 256;
-
+        private const int _defaultWriteBufferCapacity = 256;
         private readonly HttpClient _httpClient;
-
         private readonly string _lineNotifyApiUrl;
         private readonly ITextFormatter _textFormatter;
         private readonly IEnumerable<string> _lineNotifyTokens;
 
-        public LineNotifySink(ITextFormatter textFormatter, IEnumerable<string> lineNotifyTokens, string lineNotifyApiUrl = "https://notify-api.line.me/api/notify")
+        public LineNotifySink(HttpClient httpClient, string lineNotifyApiUrl, ITextFormatter textFormatter, IEnumerable<string> lineNotifyTokens)
         {
-            if (!lineNotifyTokens.Any())
-            {
-                throw new ArgumentException("長度不能為0。", nameof(lineNotifyTokens));
-            }
-
-            _httpClient = new HttpClient();
+            _httpClient = httpClient;
             _lineNotifyApiUrl = lineNotifyApiUrl;
             _textFormatter = textFormatter;
             _lineNotifyTokens = lineNotifyTokens;
-        }
-
-        public LineNotifySink(ITextFormatter textFormatter, string lineNotifyToken, string lineNotifyApiUrl = "https://notify-api.line.me/api/notify")
-        {
-            if (string.IsNullOrWhiteSpace(lineNotifyToken))
-            {
-                throw new ArgumentException("line notify token 不能為空。", nameof(lineNotifyToken));
-            }
-
-            _httpClient = new HttpClient();
-            _lineNotifyApiUrl = lineNotifyApiUrl;
-            _textFormatter = textFormatter;
-            _lineNotifyTokens = new [] { lineNotifyToken };
         }
 
         public void Dispose()
@@ -75,7 +55,7 @@ namespace Serilog.Sinks.LineNotify
 
         private string FormatMessage(LogEvent logEvent)
         {
-            var buffer = new StringWriter(new StringBuilder(DefaultWriteBufferCapacity));
+            var buffer = new StringWriter(new StringBuilder(_defaultWriteBufferCapacity));
 
             _textFormatter.Format(logEvent, buffer);
 
@@ -95,18 +75,18 @@ namespace Serilog.Sinks.LineNotify
                     new KeyValuePair<string, string>("message", message)
                 });
 
-                var response = await _httpClient.SendAsync(requestMessage);
-
-                if (response.StatusCode == HttpStatusCode.OK) { }
-                else if (response.StatusCode == HttpStatusCode.Unauthorized)
+                using(var response = await _httpClient.SendAsync(requestMessage))
                 {
-                    throw new LoggingFailedException($"此Token已失效 : {token}");
-                }
-                else
-                {
-                    var body = response.Content.ReadAsStringAsync();
-
-                    throw new LoggingFailedException($"發送Line Notify時發生錯誤，HttpStatusCode : {response.StatusCode}，body: {body}");
+                    if (response.StatusCode == HttpStatusCode.OK) { }
+                    else if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    {
+                        throw new LoggingFailedException($"此Token已失效 : {token}");
+                    }
+                    else
+                    {
+                        var body = await response.Content.ReadAsStringAsync();
+                        throw new LoggingFailedException($"發送Line Notify時發生錯誤，HttpStatusCode : {response.StatusCode}，body: {body}");
+                    }
                 }
             }
         }
