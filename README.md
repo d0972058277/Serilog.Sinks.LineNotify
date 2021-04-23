@@ -7,12 +7,14 @@ Set ```appsettings.json```
             {
                 "Name": "LineNotify",
                 "Args": {
-                    "OutputTemplate": "{NewLine}DateTime:{Timestamp:yyyy/MM/dd HH:mm:ss},{NewLine}Error Level: {Level},{NewLine}EnvironmentName: {EnvironmentName},{NewLine}ApplicationName: {ApplicationName},{NewLine}RuntimeId: {RuntimeId},{NewLine}Message: {Message:lj},{NewLine}XCorrelationID: {XCorrelationID},{NewLine}Exception: {Exception}",
+                    "OutputTemplate": "{NewLine}DateTime:{Timestamp:yyyy/MM/dd HH:mm:ss},{NewLine}Log Level: {Level},{NewLine}EnvironmentName: {EnvironmentName},{NewLine}ApplicationName: {ApplicationName},{NewLine}RuntimeId: {RuntimeId},{NewLine}Message: {Message:lj},{NewLine}XCorrelationID: {XCorrelationID},{NewLine}Exception: {Exception}",
                     "LineNotifyTokens": [
+                        // https://notify-bot.line.me/
                         // Line Notify token
                         "" 
                     ],
-                    "MinutesForBlockDuplicatedLog": 10
+                    "MinutesForBlockDuplicatedLog": 10,
+                    "RestrictedToMinimumLevel": "Error"
                 }
             }
         ]
