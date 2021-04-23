@@ -7,13 +7,13 @@ using Serilog.Events;
 
 namespace Serilog.Sinks.LineNotify.Sinks.Decorators
 {
-    class ColdDownSinkDecorator : ILogEventSink, IDisposable
+    class BlockDuplicatedLogSinkDecorator : ILogEventSink, IDisposable
     {
         private readonly ILogEventSink _logEventSink;
         private readonly IMemoryCache _memoryCache;
         private readonly TimeSpan _blockTimeSpan;
 
-        public ColdDownSinkDecorator(ILogEventSink logEventSink, IMemoryCache memoryCache, TimeSpan blockTimeSpan)
+        public BlockDuplicatedLogSinkDecorator(ILogEventSink logEventSink, IMemoryCache memoryCache, TimeSpan blockTimeSpan)
         {
             _logEventSink = logEventSink;
             _memoryCache = memoryCache;

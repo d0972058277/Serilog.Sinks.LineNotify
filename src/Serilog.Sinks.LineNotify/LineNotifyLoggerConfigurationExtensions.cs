@@ -27,12 +27,12 @@ namespace Serilog
             return logEventSink;
         }
 
-        private static ILogEventSink ApplyColdDownDecorator(ILogEventSink logEventSink, int coldDownMinutes, MemoryCache memoryCache = null)
+        private static ILogEventSink ApplyBlockDuplicatedLogDecorator(ILogEventSink logEventSink, int minutesForBlockDuplicatedLog, MemoryCache memoryCache = null)
         {
             if (memoryCache is null)
                 memoryCache = new MemoryCache(new MemoryCacheOptions());
-            var timespan = TimeSpan.FromMinutes(coldDownMinutes);
-            var decorator = new ColdDownSinkDecorator(logEventSink, memoryCache, timespan);
+            var timespan = TimeSpan.FromMinutes(minutesForBlockDuplicatedLog);
+            var decorator = new BlockDuplicatedLogSinkDecorator(logEventSink, memoryCache, timespan);
             return decorator;
         }
 
@@ -60,14 +60,14 @@ namespace Serilog
             this LoggerSinkConfiguration loggerSinkConfiguration,
             string outputTemplate,
             IEnumerable<string> lineNotifyTokens,
-            int coldDownMinutes,
+            int minutesForBlockDuplicatedLog,
             HttpClient httpClient = null,
             IFormatProvider formatProvider = null,
             MemoryCache memoryCache = null,
             LogEventLevel restrictedToMinimumLevel = LogEventLevel.Verbose)
         {
             var logEventSink = CreateLineNotify(outputTemplate, lineNotifyTokens, httpClient : httpClient, formatProvider : formatProvider);
-            logEventSink = ApplyColdDownDecorator(logEventSink, coldDownMinutes, memoryCache : memoryCache);
+            logEventSink = ApplyBlockDuplicatedLogDecorator(logEventSink, minutesForBlockDuplicatedLog, memoryCache : memoryCache);
             return loggerSinkConfiguration.Sink(logEventSink, restrictedToMinimumLevel);
         }
     }
